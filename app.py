@@ -1,21 +1,27 @@
 import os
-import openai
-import argparse
+import json
+import re
 from datetime import datetime
 import calendar
 import glob
-import tiktoken
 import logging
 import dotenv
+import tiktoken
+from openai import OpenAI
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+logger = logging.getLogger()
 
 # Load environment variables
 dotenv.load_dotenv()
 
 # Set the API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_todays_note_path():
     # Get the note directory
@@ -35,87 +41,133 @@ def get_todays_note_path():
     return path
 
 def convert_audio_to_text(audio_file_path):
-    logging.info(f'Transcribing audio file: {audio_file_path}')
+    logger.info(f'Transcribing audio file: {audio_file_path}')
     with open(audio_file_path, "rb") as audio_file:
-        transcript = openai.Audio.transcribe(model="whisper-1", file=audio_file, language="en")
-    logging.info('Transcription complete')
-    return transcript['text']
+        transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file, language="en")
+    logger.info('Transcription complete')
+    return transcript.text
 
 def count_tokens(text):
     encoding = tiktoken.encoding_for_model("gpt-4-1106-preview")
     tokens = encoding.encode(text)
     num_tokens = len(tokens)
-    logging.info(f'Number of tokens: {num_tokens}')
+    logger.info(f'Number of tokens: {num_tokens}')
     return num_tokens
 
 def get_summary(prompt):
+
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "write_new_task",
+                "description": "Write new tasks to the daily note.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "tasks": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": ["tasks"]
+                }
+            }
+        }
+    ]
+
     token_count = count_tokens(prompt)
-    logging.info(f'Total tokens in prompt: {token_count}')
+    logger.info(f'Total tokens in prompt: {token_count}')
     if token_count > 8192:
-        logging.warning('Token count exceeds limit, splitting text into smaller parts.')
+        logger.warning('Token count exceeds limit, splitting text into smaller parts.')
         # Split the text into smaller parts if it exceeds the token limit
         parts = [prompt[i:i+8000] for i in range(0, len(prompt), 8000)]
         summaries = []
         for part in parts:
-            completion = openai.ChatCompletion.create(
-                model="gpt-4-1106-preview",
-                messages=[
-                    {"role": "system", "content": "You are the USS Enterprise Ship's Computer. You summarize voice logs provided by crewmembers. The response should include three parts: 1) A 'TL;DR' section with bullet points summarizing key events and takeaways. 2) An 'Actions' section with a bullet point list of outstanding actions. 3) A 'Summary' section providing a detailed, in-depth paragraph, maintaining clarity and conciseness; Written from the perspective of the crewmember."},
-                    {"role": "user", "content": part}
-                ]
-            )
-            summaries.append(completion['choices'][0]['message']['content'])
+            completion = client.chat.completions.create(model="gpt-4-1106-preview",
+            messages=[
+                {"role": "system", "content": "You are the USS Enterprise Ship's Computer. Summarize the voice logs provided by the crewmember. The response should include three parts: 1) A 'TL;DR' section with bullet points summarizing key events and takeaways. 2) A 'Summary' section providing a detailed, in-depth paragraph, maintaining clarity and conciseness. You have the ability to write new markdown tasks to the daily note if the crewmember mentions any: Tasks must be in valid markdown format E.G. '- [ ] Task 1'"},
+                {"role": "user", "content": part}
+            ])
+            summaries.append(completion.choices[0].message)
         # Combine the summaries into a single summary
         summary = '\n\n'.join(summaries)
     else:
-        logging.info('Processing text...')
+        logger.info('Processing text...')
         # If the text is within the token limit, process it as usual
-        completion = openai.ChatCompletion.create(
+        completion = client.chat.completions.create(
             model="gpt-4-1106-preview",
             messages=[
-                {"role": "system", "content": "You are the USS Enterprise Ship's Computer. Summarize the logs provided by the crewmember. The response should include three parts: 1) A 'TL;DR' section with bullet points summarizing key events and takeaways. 2) An 'Actions' section with a bullet point list of outstanding actions. 3) A 'Summary' section providing a detailed, in-depth paragraph, maintaining clarity and conciseness."},
+                {"role": "system", "content": "You are the USS Enterprise Ship's Computer. Summarize the voice logs provided by the crewmember. The response should include three parts: 1) A 'TL;DR' section with bullet points summarizing key events and takeaways. 2) A 'Summary' section providing a detailed, in-depth paragraph, maintaining clarity and conciseness. You have the ability to write new markdown tasks to the daily note if the crewmember mentions any: Tasks must be in valid markdown format E.G. '- [ ] Task 1'"},
                 {"role": "user", "content": prompt}
-            ]
-        )
-        summary = completion['choices'][0]['message']['content']
+            ],
+            tools=tools,
+            tool_choice="auto"
+            )
+        summary = completion.choices[0].message
+
+    # Check if there are any tool calls
+    if completion.choices[0].message.tool_calls:
+        # Extract the tasks from the arguments field
+        tasks = json.loads(completion.choices[0].message.tool_calls[0].function.arguments)["tasks"]
+        # Call the write_new_tasks function with the tasks
+        write_new_tasks(tasks)
+
     return summary
 
-def write_new_task(new_task):
-    file_path = get_todays_note_path()
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
+def write_new_tasks(tasks: list):
+    # Check if tasks are in valid markdown format
+    # for task in tasks:
+    #     if not re.match(r'- \[\] .+', task):
+    #         print(f"Invalid task format: {task}")
+    #         return
+    try:
+        file_path = get_todays_note_path()
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
 
-    task_section_found = False
-    task_list_end = 0
+        task_section_found = False
+        task_list_end = None
 
-    for i, line in enumerate(lines):
-        if task_section_found:
-            print(i, task_section_found, line[0:5], line.startswith("- ["))
-        if line.strip() == "### Tasks":
-            task_section_found = True
-        elif task_section_found and not line.startswith("- ["):
-            task_list_end = i
-            break
+        for i, line in enumerate(lines):
+            if line.strip() == "### Tasks":
+                task_section_found = True
+            elif task_section_found and line.startswith("- ["):
+                task_list_end = i + 1
+            elif task_section_found and not line.startswith("- ["):
+                break
 
-    if task_section_found:
-        lines.insert(task_list_end, new_task + "\n")
-    else:
-        lines.append("\n### Tasks\n" + new_task + "\n")
+        if task_list_end is not None:
+            for task in tasks:
+                lines.insert(task_list_end, task + "\n")
+                task_list_end += 1
+        else:
+            lines.append("\n### Tasks\n")
+            for task in tasks:
+                lines.append(task + "\n")
 
-    with open(file_path, 'w') as file:
-        file.writelines(lines)
+        with open(file_path, 'w') as file:
+            file.writelines(lines)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+        with open(file_path, 'w') as file:
+            file.writelines(lines)
+    except FileNotFoundError:
+        logger.error(f"File {file_path} not found.")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    logging.info('Script started.')
+    logger.info('Script started.')
+
     # Get todays audio files
     note_dir = f"{os.getenv('NOTE_DIRECTORY')}Obsidian Vault/"
-    daily_note_path = get_todays_note_path()
     today_str = datetime.now().strftime('%Y%m%d')
-    i = 1
-    test_task = f"- [ ] Test task {i}"
-    write_new_task(test_task)
     todays_audio_files = glob.glob(f"{note_dir}Recording {today_str}*.webm")
-    print(f'Found {len(todays_audio_files)} audio files for today.')
+    logger.info(f'Found {len(todays_audio_files)} audio files for today.')
 
     # Convert todays audio files to text
     transcriptions = [convert_audio_to_text(audio_file) for audio_file in todays_audio_files]
@@ -123,8 +175,8 @@ if __name__ == "__main__":
     transcription_text = '\n\n'.join(transcriptions)
 
     # Get summary of today's transcriptions
-    # summary_prompt = f"Summarize the following thoughts:\n{transcription_text}"
-    # summary = get_summary(summary_prompt)
+    summary_prompt = f"Summarize the following thoughts:\n{transcription_text}"
+    summary = get_summary(summary_prompt)
 
-    # logging.info('Log summary complete:')
-    # print(f'Summary: {summary}')
+    logger.info('Log summary complete:')
+    logger.info(f'Summary: {summary}')
