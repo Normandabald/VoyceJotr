@@ -1,0 +1,4 @@
+openai==1.7.0
+tiktoken==0.4.0
+pyyaml==6.0
+watchdog==3.0.0
