@@ -5,6 +5,7 @@ The Voice Note Summariser is an automated tool designed to streamline your note-
 Get those pesky thoughts out of your head and into your notes!
 
 Did this tool help you? Consider [supporting me](https://www.buymeacoffee.com/normandabald)!
+
 <a href="https://www.buymeacoffee.com/normandabald" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
 ## Features
