@@ -2,6 +2,8 @@
 
 This script can be run in the background to automatically summarise your voice note, extract tasks into a todo list and add the summary to your daily notes.
 
+<a href="https://www.buymeacoffee.com/normandabald" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
 ## Setup
 
 1. Install the required Python packages:
