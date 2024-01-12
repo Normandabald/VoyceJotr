@@ -1,6 +1,6 @@
 import logging
 import json
-from echonote.config_manager import Config
+from voycejotr.config_manager import Config
 from openai import OpenAI
 from utils import count_tokens
 from note_services import write_summary, write_new_tasks

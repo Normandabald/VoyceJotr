@@ -13,7 +13,7 @@ class SingletonType(type):
         return cls._instances[cls]
 
 class Config(metaclass=SingletonType):
-    def __init__(self, config_file="echonote/config.yaml"):
+    def __init__(self, config_file="voycejotr/config.yaml"):
         self.config_values = self.load_config(config_file)
         self.api_key = self.config_values.get("OPENAI_API_KEY")
         self.note_directory = self.config_values.get("NOTE_DIRECTORY")

@@ -4,7 +4,7 @@ import time
 import logging
 from openai import OpenAI
 from main import process_voice_note
-from echonote.config_manager import Config
+from voycejotr.config_manager import Config
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

@@ -1,5 +1,5 @@
 import unittest
-from echonote.utils import count_tokens
+from voycejotr.utils import count_tokens
 
 class TestCountTokens(unittest.TestCase):
     def test_count_tokens(self):

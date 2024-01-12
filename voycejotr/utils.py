@@ -1,6 +1,6 @@
 import logging
 import tiktoken
-from echonote.config_manager import Config
+from voycejotr.config_manager import Config
 
 config = Config()
 

@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
-from echonote.audio_services import convert_audio_to_text
+from voycejotr.audio_services import convert_audio_to_text
 
 class TestAudioServices(unittest.TestCase):
 
-    @patch('echonote.audio_services.OpenAI')
+    @patch('voycejotr.audio_services.OpenAI')
     def test_convert_audio_to_text_success(self, mock_openai):
         # Mock the OpenAI client and the transcription response
         mock_transcription = MagicMock()
@@ -21,7 +21,7 @@ class TestAudioServices(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             convert_audio_to_text(None, "fake_path_to_audio_file.webm")
 
-    @patch('echonote.audio_services.OpenAI')
+    @patch('voycejotr.audio_services.OpenAI')
     def test_convert_audio_to_text_api_failure(self, mock_openai):
         # Mock the OpenAI client to raise an exception
         mock_openai.audio.transcriptions.create.side_effect = Exception("API error")

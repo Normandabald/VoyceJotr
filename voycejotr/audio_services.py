@@ -1,7 +1,7 @@
 import logging
 import os
 from openai import OpenAI
-from echonote.config_manager import Config
+from voycejotr.config_manager import Config
 
 config = Config()
 
