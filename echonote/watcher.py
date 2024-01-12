@@ -1,10 +1,10 @@
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from main import process_voice_note
 import time
 import logging
 from openai import OpenAI
-from config_manager import Config
+from main import process_voice_note
+from echonote.config_manager import Config
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

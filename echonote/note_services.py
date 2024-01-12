@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime
-from config_manager import Config
+from echonote.config_manager import Config
 from datetime import datetime
 
 config = Config()
