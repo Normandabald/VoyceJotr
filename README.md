@@ -1,4 +1,4 @@
-# Voice Note Summarizer
+# Voice Note Summariser
 
 The Voice Note Summariser is an automated tool designed to streamline your note-taking and task management. It transcribes, summarises, and integrates your voice notes into daily notes within Obsidian, and extracts tasks for easy tracking.
 
