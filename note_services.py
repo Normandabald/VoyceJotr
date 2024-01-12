@@ -52,6 +52,7 @@ def write_new_tasks(tasks: list):
         for i, line in enumerate(lines):
             if line.strip() == config.task_header:
                 task_section_found = True
+                task_list_end = i + 1
             elif task_section_found and line.startswith("- ["):
                 task_list_end = i + 1
             elif task_section_found and not line.startswith("- ["):
@@ -76,7 +77,7 @@ def write_new_tasks(tasks: list):
         logger.error(f"An error occurred: {e}")
         raise
 
-def write_summary(summary: str, audio_filename: str):
+def write_summary(summary: str, short_summary: str, audio_filename: str):
     """
     Write the summary of a voice note below the audio link in the daily note.
 
@@ -105,7 +106,7 @@ def write_summary(summary: str, audio_filename: str):
 
         if audio_link_found:
             timestamp = datetime.now().strftime('%H:%M')
-            lines.insert(audio_link_end, f"> \"{summary}\" - {timestamp}" + "\n")
+            lines.insert(audio_link_end, f">[!Tip]- {timestamp}: {short_summary}\n> \"{summary}\"" + "\n")
 
         with open(file_path, 'w') as file:
             file.writelines(lines)
