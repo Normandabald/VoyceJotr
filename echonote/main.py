@@ -36,7 +36,7 @@ def process_voice_note(api_client, audio_file_path):
             if ai_response.tool_calls:
                 arguments = json.loads(ai_response.tool_calls[0].function.arguments)
                 if "summary" in arguments:
-                    write_summary(arguments["summary"], audio_filename)
+                    write_summary(arguments["summary"], arguments["short_summary"], audio_filename)
                 elif "tasks" in arguments:
                     write_new_tasks(arguments["tasks"])
         

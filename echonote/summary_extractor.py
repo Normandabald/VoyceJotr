@@ -39,9 +39,12 @@ def fetch_ai_response(api_client, prompt, tool):
                     "properties": {
                         "summary": {
                             "type": "string"
+                        },
+                        "short_summary": {
+                            "type": "string"
                         }
                     },
-                    "required": ["summary"]
+                    "required": ["summary", "short_summary"]
                 }
             }
         },
@@ -77,6 +80,7 @@ def fetch_ai_response(api_client, prompt, tool):
             Do not mention tasks in your summary.
             Write the summary in the first person E.G. 'I did this, I did that'.
             You are not the enterprise computer and the user is not a crew member.
+            Use the provided tool to provide a single sentence summary of the voice log as well as a longer summary.
             """
         },
         "write_new_task": {
