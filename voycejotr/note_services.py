@@ -2,7 +2,6 @@ import logging
 import re
 from datetime import datetime
 from voycejotr.config_manager import Config
-from datetime import datetime
 
 config = Config()
 

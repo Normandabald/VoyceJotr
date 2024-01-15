@@ -1,9 +1,9 @@
 import logging
 import json
-from voycejotr.config_manager import Config
 from openai import OpenAI
-from utils import count_tokens
-from note_services import write_summary, write_new_tasks
+from voycejotr.config_manager import Config
+from voycejotr.utils import count_tokens
+from voycejotr.note_services import write_summary, write_new_tasks
 
 config = Config()
 

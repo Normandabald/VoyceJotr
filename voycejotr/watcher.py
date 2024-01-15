@@ -3,7 +3,7 @@ from watchdog.events import FileSystemEventHandler
 import time
 import logging
 from openai import OpenAI
-from main import process_voice_note
+from voycejotr.main import process_voice_note
 from voycejotr.config_manager import Config
 
 # Setup logging

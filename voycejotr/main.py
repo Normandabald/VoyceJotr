@@ -3,11 +3,11 @@ import glob
 import os
 import json
 from datetime import datetime
-from voycejotr.config_manager import Config
-from audio_services import convert_audio_to_text
-from summary_extractor import fetch_ai_response
-from note_services import write_new_tasks, write_summary
 from openai import OpenAI
+from voycejotr.config_manager import Config
+from voycejotr.audio_services import convert_audio_to_text
+from voycejotr.summary_extractor import fetch_ai_response
+from voycejotr.note_services import write_new_tasks, write_summary
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
