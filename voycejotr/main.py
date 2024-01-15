@@ -3,7 +3,7 @@ import glob
 import os
 import json
 from datetime import datetime
-from config_manager import Config
+from voycejotr.config_manager import Config
 from audio_services import convert_audio_to_text
 from summary_extractor import fetch_ai_response
 from note_services import write_new_tasks, write_summary

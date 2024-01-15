@@ -1,6 +1,6 @@
 import logging
 import tiktoken
-from config_manager import Config
+from voycejotr.config_manager import Config
 
 config = Config()
 
@@ -31,4 +31,3 @@ def count_tokens(text):
     except Exception as e:
         logger.error(f"Error in counting tokens: {e}")
         raise
-
