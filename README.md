@@ -59,7 +59,7 @@ This happens by default, make sure you are hitting record with your daily note o
 1. Run the background watchdog script:
 
 ```bash
-python3 watcher.py
+python3 -m voycejotr.watcher
 ```
 
 2. With your daily note open, hit record and waffle way.
@@ -73,4 +73,4 @@ The script will:
 
 ## Support
 
-If this tool enhances your productivity, consider [supporting me](<(https://www.buymeacoffee.com/normandabald)>)!
+If this tool enhances your productivity, consider [supporting me](https://www.buymeacoffee.com/normandabald)!

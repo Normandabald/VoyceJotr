@@ -23,11 +23,12 @@ class NewRecordingHandler(FileSystemEventHandler):
         process_voice_note(client, event.src_path)
 
 if __name__ == "__main__":
-    logger.info("Starting watcher")
+    logger.info("Starting watcher...")
     event_handler = NewRecordingHandler()
     observer = Observer()
     observer.schedule(event_handler, path=config.note_directory, recursive=True)
     observer.start()
+    logger.info("Ready!")
 
     try:
         while True:
