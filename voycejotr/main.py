@@ -30,7 +30,8 @@ def process_voice_note(api_client, audio_file_path):
         audio_filename = os.path.basename(audio_file_path)
         # Get summary of the transcription and write to daily note
         summary_prompt = f"Voice note transcription:\n{transcription}"
-        tools = ["write_summary", "write_new_task"]
+        # tools = ["write_summary", "write_new_task"]
+        tools = ["/Users/lloydpassingham/repos/personal-projects/captains_log/voycejotr/tools/write_summary.json"]
         for tool in tools:
             ai_response = fetch_ai_response(api_client, prompt=summary_prompt, tool=tool)
             if ai_response.tool_calls:
