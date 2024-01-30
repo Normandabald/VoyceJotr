@@ -1,11 +1,16 @@
 import json
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(level)s - %(message)s')
+logger = logging.getLogger('summary_extractor')
 
 class ToolFactory:
     def __init__(self):
         self.tools = {}
         self.tool_messages = {}
 
-    def load_tool(self, tool_file):
+    def load_tool(self, tool):
         """
         Load a tool from a JSON file.
 
@@ -14,6 +19,8 @@ class ToolFactory:
         tool_file : str
             The path to the JSON file containing the tool definition.
         """
+        tool_file = f"voycejotr/tools/{tool}.json"
+        logger.info(f"Loading tool from {tool_file} ...")
         with open(tool_file, 'r') as f:
             tool_data = json.load(f)
             name = tool_data['name']

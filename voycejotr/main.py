@@ -30,20 +30,15 @@ def process_voice_note(api_client, audio_file_path):
         audio_filename = os.path.basename(audio_file_path)
         # Get summary of the transcription and write to daily note
         summary_prompt = f"Voice note transcription:\n{transcription}"
-        # tools = ["write_summary", "write_new_task"]
-        tools = ["/Users/lloydpassingham/repos/personal-projects/captains_log/voycejotr/tools/write_summary.json"]
-        for tool in tools:
-            ai_response = fetch_ai_response(api_client, prompt=summary_prompt, tool=tool)
+        tools = ["extract_summary", "extract_tasks"]
+        for tool_name in tools:
+            ai_response = fetch_ai_response(api_client, prompt=summary_prompt, tool_name=tool_name)
             if ai_response.tool_calls:
                 arguments = json.loads(ai_response.tool_calls[0].function.arguments)
                 if "summary" in arguments:
                     write_summary(arguments["summary"], arguments["short_summary"], audio_filename)
                 elif "tasks" in arguments:
                     write_new_tasks(arguments["tasks"])
-        
-
-        # Handle other summary and task management logic
-        # ...
 
         logger.info('Voice note processing complete.')
 
