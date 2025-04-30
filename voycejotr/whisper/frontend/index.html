@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whisper Frontend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+      <h1 class="text-2xl font-bold mb-6 text-center">Audio Transcription</h1>
+
+      <div class="space-y-4 mb-6">
+        <div>
+          <label for="model" class="block text-sm font-medium text-gray-700"
+            >Model (optional):</label
+          >
+          <select
+            id="model"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          >
+            <option value="">Default (Base)</option>
+            <option value="tiny">Tiny</option>
+            <option value="small">Small</option>
+            <option value="base">Base</option>
+            <option value="turbo">Turbo</option>
+          </select>
+        </div>
+        <div>
+          <label for="language" class="block text-sm font-medium text-gray-700"
+            >Language (optional):</label
+          >
+          <select
+            id="language"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          >
+            <option value="en">English (en)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Recording Section -->
+      <div class="border-b border-gray-200 pb-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4 text-center text-gray-600">
+          Record Audio
+        </h2>
+        <div class="flex justify-center space-x-4 mb-4">
+          <button
+            id="startButton"
+            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            Start Recording
+          </button>
+          <button
+            id="stopButton"
+            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            disabled
+          >
+            Stop Recording
+          </button>
+        </div>
+        <div id="status" class="text-center text-gray-500">
+          Press Start to record.
+        </div>
+      </div>
+
+      <!-- Upload Section -->
+      <div class="border-b border-gray-200 pb-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4 text-center text-gray-600">
+          Or Upload File
+        </h2>
+        <div class="mb-4">
+          <label
+            for="audioFile"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Select Audio File:</label
+          >
+          <input
+            type="file"
+            id="audioFile"
+            accept="audio/*"
+            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+          />
+        </div>
+        <div class="flex justify-center">
+          <button
+            id="uploadButton"
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled
+          >
+            Transcribe Uploaded File
+          </button>
+        </div>
+        <div id="uploadStatus" class="text-center text-gray-500 mt-4">
+          Select a file and click transcribe.
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <audio id="audioPlayback" controls class="w-full hidden"></audio>
+      </div>
+
+      <div
+        id="transcriptionResult"
+        class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded min-h-[100px]"
+      >
+        <h2 class="text-lg font-semibold mb-2">Transcription:</h2>
+        <pre
+          id="transcriptionText"
+          class="whitespace-pre-wrap text-gray-800"
+        ></pre>
+        <p id="transcriptionInfo" class="text-sm text-gray-500 mt-2"></p>
+      </div>
+      <div
+        id="errorResult"
+        class="mt-4 p-4 bg-red-100 border border-red-300 text-red-700 rounded hidden"
+      >
+        <h2 class="text-lg font-semibold mb-2">Error:</h2>
+        <pre id="errorText" class="whitespace-pre-wrap"></pre>
+      </div>
+    </div>
+
+    <script>
+      const startButton = document.getElementById("startButton");
+      const stopButton = document.getElementById("stopButton");
+      const audioPlayback = document.getElementById("audioPlayback");
+      const statusDiv = document.getElementById("status");
+      const transcriptionResultDiv = document.getElementById(
+        "transcriptionResult"
+      );
+      const transcriptionTextPre = document.getElementById("transcriptionText");
+      const transcriptionInfoP = document.getElementById("transcriptionInfo");
+      const errorResultDiv = document.getElementById("errorResult");
+      const errorTextPre = document.getElementById("errorText");
+      const modelInput = document.getElementById("model");
+      const languageInput = document.getElementById("language");
+      const audioFileInput = document.getElementById("audioFile");
+      const uploadButton = document.getElementById("uploadButton");
+      const uploadStatusDiv = document.getElementById("uploadStatus");
+
+      let mediaRecorder;
+      let audioChunks = [];
+      let audioBlob = null; // To store the final Blob
+      let selectedFile = null; // To store the uploaded file
+
+      // Check for MediaRecorder API support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("getUserMedia not supported on your browser!");
+        startButton.disabled = true;
+        stopButton.disabled = true;
+      }
+
+      // --- Recording Logic ---
+      startButton.onclick = async () => {
+        // --- Indicate initialization immediately ---
+        statusDiv.textContent = "Initializing microphone...";
+        startButton.disabled = true; // Disable button immediately
+        stopButton.disabled = true; // Keep stop disabled until recording starts
+        audioPlayback.classList.add("hidden"); // Hide player
+        transcriptionTextPre.textContent = ""; // Clear previous results
+        transcriptionInfoP.textContent = "";
+        errorResultDiv.classList.add("hidden"); // Hide errors
+        // Disable upload while recording
+        audioFileInput.disabled = true;
+        uploadButton.disabled = true;
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          // Explicitly set mimeType for broader compatibility, check supported types if needed
+          const options = { mimeType: "audio/webm;codecs=opus" }; // or try 'audio/ogg;codecs=opus'
+          try {
+            mediaRecorder = new MediaRecorder(stream, options);
+          } catch (e) {
+            console.warn(
+              `MimeType ${options.mimeType} not supported, trying default`
+            );
+            mediaRecorder = new MediaRecorder(stream); // Fallback to browser default
+          }
+
+          audioChunks = []; // Reset chunks
+          audioBlob = null; // Reset blob
+
+          mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            // Combine chunks into a single Blob
+            audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioPlayback.src = audioUrl;
+            audioPlayback.classList.remove("hidden");
+            statusDiv.textContent =
+              "Recording stopped. Sending for transcription...";
+            stopButton.disabled = true;
+            // Start button is re-enabled in sendAudioForTranscription's finally block
+
+            // --- Send to API ---
+            await sendAudioForTranscription(audioBlob, "Recording"); // Pass type for status update
+
+            // Clean up the stream resources
+            stream.getTracks().forEach((track) => track.stop());
+          };
+
+          mediaRecorder.start();
+          // --- Update status AFTER recorder has started ---
+          statusDiv.textContent = "Recording...";
+          stopButton.disabled = false; // Enable stop button now
+        } catch (err) {
+          console.error("Error accessing microphone:", err);
+          statusDiv.textContent = `Error: ${err.message}`;
+          alert(`Could not access microphone: ${err.message}`);
+          startButton.disabled = false; // Re-enable start on error
+          stopButton.disabled = true;
+          // Re-enable upload controls on mic error
+          audioFileInput.disabled = false;
+          uploadButton.disabled = !selectedFile; // Enable if file is selected
+        }
+      };
+
+      stopButton.onclick = () => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+          // Status update and API call happen in mediaRecorder.onstop
+          // Re-enable upload controls after stopping recording
+          audioFileInput.disabled = false;
+          uploadButton.disabled = !selectedFile;
+        }
+      };
+
+      // --- Upload Logic ---
+      audioFileInput.onchange = (event) => {
+        selectedFile = event.target.files[0];
+        if (selectedFile) {
+          uploadStatusDiv.textContent = `Selected: ${selectedFile.name}`;
+          uploadButton.disabled = false;
+          // Display uploaded audio in player immediately (optional)
+          const audioUrl = URL.createObjectURL(selectedFile);
+          audioPlayback.src = audioUrl;
+          audioPlayback.classList.remove("hidden");
+          // Disable recording when file is selected
+          startButton.disabled = true;
+          stopButton.disabled = true;
+          statusDiv.textContent = "Ready to transcribe uploaded file.";
+        } else {
+          uploadStatusDiv.textContent = "No file selected.";
+          uploadButton.disabled = true;
+          selectedFile = null;
+          audioPlayback.classList.add("hidden");
+          audioPlayback.src = ""; // Clear player
+          // Re-enable recording if file is deselected
+          startButton.disabled = false;
+          statusDiv.textContent = "Press Start to record.";
+        }
+        // Clear previous results when a new file is selected/deselected
+        transcriptionTextPre.textContent = "";
+        transcriptionInfoP.textContent = "";
+        errorResultDiv.classList.add("hidden");
+      };
+
+      uploadButton.onclick = async () => {
+        if (!selectedFile) {
+          alert("Please select an audio file first.");
+          return;
+        }
+
+        // Clear previous results
+        transcriptionTextPre.textContent = "";
+        transcriptionInfoP.textContent = "";
+        errorResultDiv.classList.add("hidden");
+        uploadStatusDiv.textContent = `Uploading ${selectedFile.name}...`;
+        uploadButton.disabled = true;
+        audioFileInput.disabled = true; // Disable input during upload
+        // Disable recording controls
+        startButton.disabled = true;
+        stopButton.disabled = true;
+
+        await sendAudioForTranscription(selectedFile, "Upload"); // Pass type for status update
+      };
+
+      // Modified to accept blob/file and source type
+      async function sendAudioForTranscription(audioData, sourceType) {
+        const formData = new FormData();
+        // Use a generic name or the original filename if available
+        const fileName =
+          audioData instanceof File ? audioData.name : "recording.wav";
+        formData.append("audio", audioData, fileName);
+
+        const model = modelInput.value.trim();
+        const language = languageInput.value.trim();
+
+        // Construct query parameters string
+        const params = new URLSearchParams();
+        if (model) params.append("model", model);
+        if (language) params.append("language", language);
+        const queryString = params.toString();
+        const fastApiBaseUrl = "http://127.0.0.1:8001"; // Replace 8000 if your backend runs on a different port
+        const apiUrl = `${fastApiBaseUrl}/transcribe${
+          queryString ? "?" + queryString : ""
+        }`;
+
+        // Use the correct status div based on source
+        const currentStatusDiv =
+          sourceType === "Recording" ? statusDiv : uploadStatusDiv;
+
+        try {
+          currentStatusDiv.textContent = "Uploading and processing...";
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            body: formData,
+            // 'Content-Type': 'multipart/form-data' is usually set automatically by fetch with FormData
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json(); // Attempt to get error details
+            throw new Error(
+              `API Error (${response.status}): ${
+                errorData.detail || response.statusText
+              }`
+            );
+          }
+
+          const result = await response.json();
+
+          transcriptionTextPre.textContent = result.text;
+          transcriptionInfoP.textContent = `Model: ${
+            result.model
+          }, Time: ${result.time.toFixed(2)}s`;
+          currentStatusDiv.textContent = "Transcription complete.";
+          errorResultDiv.classList.add("hidden");
+        } catch (error) {
+          console.error("Transcription failed:", error);
+          currentStatusDiv.textContent = "Transcription failed.";
+          errorTextPre.textContent = error.message;
+          errorResultDiv.classList.remove("hidden");
+          transcriptionTextPre.textContent = ""; // Clear transcription area on error
+          transcriptionInfoP.textContent = "";
+        } finally {
+          // Re-enable controls based on the source
+          if (sourceType === "Recording") {
+            startButton.disabled = false; // Ensure start is enabled after attempt
+            stopButton.disabled = true;
+            // Re-enable upload controls if recording finished
+            audioFileInput.disabled = false;
+            uploadButton.disabled = !selectedFile; // Enable if file still selected
+          } else {
+            // Upload source
+            audioFileInput.disabled = false; // Re-enable file input
+            uploadButton.disabled = false; // Re-enable upload button
+            // Re-enable recording controls if upload finished
+            startButton.disabled = false;
+            stopButton.disabled = true;
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
