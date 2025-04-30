@@ -23,7 +23,7 @@ def count_tokens(text):
         The number of tokens.
     """
     try:
-        encoding = tiktoken.encoding_for_model(config.gpt_model)
+        encoding = tiktoken.encoding_for_model("gpt-4o")
         tokens = encoding.encode(text)
         num_tokens = len(tokens)
         logger.info(f'Number of tokens in text: {num_tokens}')

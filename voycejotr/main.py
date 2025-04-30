@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     # Get today's audio files
     today_str = datetime.now().strftime('%Y%m%d')
-    todays_audio_files = glob.glob(f"{config.note_directory}Recording {today_str}*.webm")
+    todays_audio_files = glob.glob(f"{config.note_directory}Recording {today_str}*.m4a")
 
 
     # Process today's audio files

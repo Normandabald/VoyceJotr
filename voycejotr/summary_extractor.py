@@ -97,8 +97,9 @@ Do not include the 'Short_summary:' or 'Summary:' in your response.
             "content": """
             You are a task extractor.
             Extract tasks from the voice logs provided to you.
+            Provide an estimate of the time required to complete the task if possible.
             You have access to a tool that can write new tasks to the daily note if the message mentions any but only if they are in valid markdown format.
-            The response must include a list of tasks in valid markdown format E.G. '[`- [ ] Task 1`, `- [ ] Task 2`]'.
+            The response must include a list of tasks in valid markdown format E.G. '[`- [ ] Task 1`, `- [ ] Task 2 (10 minutes)`]'.
             You will be marked down if tasks are not in valid markdown format.
             """
         }

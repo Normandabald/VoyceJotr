@@ -2,7 +2,8 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import time
 import logging
-from openai import OpenAI
+import threading
+from openai import OpenAI, OpenAIError
 from voycejotr.main import process_voice_note
 from voycejotr.config_manager import Config
 
@@ -11,16 +12,34 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger('watcher')
 
 config = Config()
-client = OpenAI(api_key=config.api_key)
+
+try:
+    client = OpenAI(api_key=config.api_key)
+except OpenAIError as e:
+    logger.error(f"Failed to initialize OpenAI client: {e}")
+    exit(1)
 
 class NewRecordingHandler(FileSystemEventHandler):
+    def __init__(self):
+        super().__init__()
+        self.processed_files = set()
+        self.lock = threading.Lock()
+    
     def on_created(self, event):
-        if event.is_directory:
+        if event.is_directory or not event.src_path.endswith('.m4a'):
             return
-        if not event.src_path.endswith('.webm'):
-            return
-        logger.info(f"New recording detected: {event.src_path}")
-        process_voice_note(client, event.src_path)
+        with self.lock:
+            if event.src_path in self.processed_files:
+                return
+            self.processed_files.add(event.src_path)
+        
+        def delayed_process():
+            logger.info(f"New recording detected: {event.src_path}")
+            process_voice_note(client, event.src_path)
+
+        # Delay processing to allow file to be fully written.
+        timer = threading.Timer(1.0, delayed_process)
+        timer.start()
 
 if __name__ == "__main__":
     logger.info("Starting watcher...")
