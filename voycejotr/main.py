@@ -8,6 +8,7 @@ from voycejotr.config_manager import Config
 from voycejotr.audio_services import convert_audio_to_text
 from voycejotr.summary_extractor import fetch_ai_response
 from voycejotr.note_services import write_new_tasks, write_summary
+from voycejotr.localWhisper.transcribe import main as local_whisper_transcribe
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,7 +27,7 @@ def process_voice_note(api_client, audio_file_path):
     """
     try:
         # Convert the audio file to text
-        transcription = convert_audio_to_text(api_client, audio_file_path)
+        transcription = local_whisper_transcribe(audio_file_path) # uses local Whisper model
         audio_filename = os.path.basename(audio_file_path)
         # Get summary of the transcription and write to daily note
         summary_prompt = f"Voice note transcription:\n{transcription}"

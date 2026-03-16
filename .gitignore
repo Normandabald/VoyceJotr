@@ -1,3 +1,5 @@
 config.yaml
 __pycache__
 venv/
+*.env
+transcriptions.db

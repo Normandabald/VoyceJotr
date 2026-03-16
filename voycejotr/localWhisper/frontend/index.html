@@ -296,7 +296,7 @@
         if (model) params.append("model", model);
         if (language) params.append("language", language);
         const queryString = params.toString();
-        const fastApiBaseUrl = "http://127.0.0.1:8001"; // Replace 8000 if your backend runs on a different port
+        const fastApiBaseUrl = "http://127.0.0.1:8000"; // Replace 8000 if your backend runs on a different port
         const apiUrl = `${fastApiBaseUrl}/transcribe${
           queryString ? "?" + queryString : ""
         }`;
